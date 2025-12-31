@@ -562,9 +562,9 @@ pub const Diagnostic = struct {
     }
 
     /// Wrapper around `report`, which writes to a file in a buffered manner
-    pub fn reportToFile(diag: Diagnostic, file: std.fs.File, err: anyerror) !void {
+    pub fn reportToFile(diag: Diagnostic, io: std.Io, file: std.Io.File, err: anyerror) !void {
         var buf: [1024]u8 = undefined;
-        var writer = file.writer(&buf);
+        var writer = file.writer(io, &buf);
         try diag.report(&writer.interface, err);
         return writer.interface.flush();
     }
@@ -1358,13 +1358,14 @@ pub const HelpOptions = struct {
 
 /// Wrapper around `help`, which writes to a file in a buffered manner
 pub fn helpToFile(
-    file: std.fs.File,
+    io: std.Io,
+    file: std.Io.File,
     comptime Id: type,
     params: []const Param(Id),
     opt: HelpOptions,
 ) !void {
     var buf: [1024]u8 = undefined;
-    var writer = file.writer(&buf);
+    var writer = file.writer(io, &buf);
     try help(&writer.interface, Id, params, opt);
     return writer.interface.flush();
 }
@@ -2017,9 +2018,9 @@ test "clap.help" {
 }
 
 /// Wrapper around `usage`, which writes to a file in a buffered manner
-pub fn usageToFile(file: std.fs.File, comptime Id: type, params: []const Param(Id)) !void {
+pub fn usageToFile(io: std.Io, file: std.Io.File, comptime Id: type, params: []const Param(Id)) !void {
     var buf: [1024]u8 = undefined;
-    var writer = file.writer(&buf);
+    var writer = file.writer(io, &buf);
     try usage(&writer.interface, Id, params);
     return writer.interface.flush();
 }
