@@ -14,10 +14,13 @@ pub fn main() !void {
     });
     defer res.deinit();
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
+
     // `clap.usageToFile` is a function that can print a simple usage string. It can print any
     // `Param` where `Id` has a `value` method (`Param(Help)` is one such parameter).
     if (res.args.help != 0)
-        return clap.usageToFile(.stdout(), clap.Help, &params);
+        return clap.usageToFile(io, .stdout(), clap.Help, &params);
 }
 
 const clap = @import("clap");

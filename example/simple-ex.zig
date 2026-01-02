@@ -23,6 +23,9 @@ pub fn main() !void {
         .ANSWER = clap.parsers.enumeration(YesNo),
     };
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
+
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, parsers, .{
         .diagnostic = &diag,
@@ -32,7 +35,7 @@ pub fn main() !void {
         .assignment_separators = "=:",
     }) catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     };
     defer res.deinit();

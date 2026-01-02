@@ -13,12 +13,14 @@ pub fn main() !void {
     });
     defer res.deinit();
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
     // `clap.help` is a function that can print a simple help message. It can print any `Param`
     // where `Id` has a `description` and `value` method (`Param(Help)` is one such parameter).
     // The last argument contains options as to how `help` should print those parameters. Using
     // `.{}` means the default options.
     if (res.args.help != 0)
-        return clap.helpToFile(.stderr(), clap.Help, &params, .{});
+        return clap.helpToFile(io, .stderr(), clap.Help, &params, .{});
 }
 
 const clap = @import("clap");

@@ -29,6 +29,9 @@ pub fn main() !void {
 
     _ = iter.next();
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
+
     var diag = clap.Diagnostic{};
     var res = clap.parseEx(clap.Help, &main_params, main_parsers, &iter, .{
         .diagnostic = &diag,
@@ -41,7 +44,7 @@ pub fn main() !void {
         // not fully consumed. It can then be reused to parse the arguments for subcommands.
         .terminating_positional = 0,
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     };
     defer res.deinit();
@@ -73,11 +76,13 @@ fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: M
 
     // Here we pass the partially parsed argument iterator.
     var diag = clap.Diagnostic{};
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
     var res = clap.parseEx(clap.Help, &params, clap.parsers.default, iter, .{
         .diagnostic = &diag,
         .allocator = gpa,
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err; // propagate error
     };
     defer res.deinit();

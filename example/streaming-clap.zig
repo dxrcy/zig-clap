@@ -31,10 +31,13 @@ pub fn main() !void {
         .diagnostic = &diag,
     };
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
+
     // Because we use a streaming parser, we have to consume each argument parsed individually.
     while (parser.next() catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     }) |arg| {
         // arg.param will point to the parameter which matched the argument.
