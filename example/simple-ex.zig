@@ -1,6 +1,10 @@
 pub fn main() !void {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     // First we specify what parameters our program can take.
     // We can use `parseParamsComptime` to parse a string into an array of `Param(Help)`.
@@ -22,9 +26,6 @@ pub fn main() !void {
         .INT = clap.parsers.int(usize, 10),
         .ANSWER = clap.parsers.enumeration(YesNo),
     };
-
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
 
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, parsers, .{

@@ -1,5 +1,10 @@
 pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     // First we specify what parameters our program can take.
     const params = [_]clap.Param(u8){
@@ -15,7 +20,7 @@ pub fn main() !void {
         .{ .id = 'f', .takes_value = .one },
     };
 
-    var iter = try std.process.ArgIterator.initWithAllocator(allocator);
+    var iter = try std.process.ArgIterator.initWithAllocator(gpa);
     defer iter.deinit();
 
     // Skip exe argument.
@@ -30,9 +35,6 @@ pub fn main() !void {
         .iter = &iter,
         .diagnostic = &diag,
     };
-
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
 
     // Because we use a streaming parser, we have to consume each argument parsed individually.
     while (parser.next() catch |err| {

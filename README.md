@@ -55,8 +55,12 @@ The simplest way to use this library is to just call the `clap.parse` function.
 
 ```zig
 pub fn main() !void {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     // First we specify what parameters our program can take.
     // We can use `parseParamsComptime` to parse a string into an array of `Param(Help)`.
@@ -70,14 +74,14 @@ pub fn main() !void {
 
     // Initialize our diagnostics, which can be used for reporting useful errors.
     // This is optional. You can also pass `.{}` to `clap.parse` if you don't
-    // care about the extra information `Diagnostic` provides.
+    // care about the extra information `Diagnostics` provides.
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
-        .allocator = gpa.allocator(),
+        .allocator = gpa,
     }) catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     };
     defer res.deinit();
@@ -109,8 +113,12 @@ if you want some other mapping.
 
 ```zig
 pub fn main() !void {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     // First we specify what parameters our program can take.
     // We can use `parseParamsComptime` to parse a string into an array of `Param(Help)`.
@@ -136,12 +144,13 @@ pub fn main() !void {
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, parsers, .{
         .diagnostic = &diag,
-        .allocator = gpa.allocator(),
+        .allocator = gpa,
         // The assignment separator can be configured. `--number=1` and `--number:1` is now
         // allowed.
         .assignment_separators = "=:",
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        // Report useful error and exit.
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     };
     defer res.deinit();
@@ -194,6 +203,9 @@ pub fn main() !void {
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
+
     var iter = try std.process.ArgIterator.initWithAllocator(gpa);
     defer iter.deinit();
 
@@ -211,7 +223,7 @@ pub fn main() !void {
         // not fully consumed. It can then be reused to parse the arguments for subcommands.
         .terminating_positional = 0,
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     };
     defer res.deinit();
@@ -222,11 +234,11 @@ pub fn main() !void {
     const command = res.positionals[0] orelse return error.MissingCommand;
     switch (command) {
         .help => std.debug.print("--help\n", .{}),
-        .math => try mathMain(gpa, &iter, res),
+        .math => try mathMain(io, gpa, &iter, res),
     }
 }
 
-fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
+fn mathMain(io: std.Io, gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
     // The parent arguments are not used here, but there are cases where it might be useful, so
     // this example shows how to pass the arguments around.
     _ = main_args;
@@ -247,7 +259,7 @@ fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: M
         .diagnostic = &diag,
         .allocator = gpa,
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err; // propagate error
     };
     defer res.deinit();
@@ -273,7 +285,12 @@ The `streaming.Clap` is the base of all the other parsers. It's a streaming pars
 
 ```zig
 pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     // First we specify what parameters our program can take.
     const params = [_]clap.Param(u8){
@@ -289,7 +306,7 @@ pub fn main() !void {
         .{ .id = 'f', .takes_value = .one },
     };
 
-    var iter = try std.process.ArgIterator.initWithAllocator(allocator);
+    var iter = try std.process.ArgIterator.initWithAllocator(gpa);
     defer iter.deinit();
 
     // Skip exe argument.
@@ -308,7 +325,7 @@ pub fn main() !void {
     // Because we use a streaming parser, we have to consume each argument parsed individually.
     while (parser.next() catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err;
     }) |arg| {
         // arg.param will point to the parameter which matched the argument.
@@ -347,8 +364,12 @@ is passed to `help` to control how the help message is printed.
 
 ```zig
 pub fn main() !void {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     const params = comptime clap.parseParamsComptime(
         \\-h, --help     Display this help and exit.
@@ -356,9 +377,7 @@ pub fn main() !void {
         \\
     );
 
-    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{
-        .allocator = gpa.allocator(),
-    });
+    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{ .allocator = gpa });
     defer res.deinit();
 
     // `clap.help` is a function that can print a simple help message. It can print any `Param`
@@ -366,7 +385,7 @@ pub fn main() !void {
     // The last argument contains options as to how `help` should print those parameters. Using
     // `.{}` means the default options.
     if (res.args.help != 0)
-        return clap.helpToFile(.stderr(), clap.Help, &params, .{});
+        return clap.helpToFile(io, .stderr(), clap.Help, &params, .{});
 }
 
 const clap = @import("clap");
@@ -389,8 +408,12 @@ $ zig-out/bin/help --help
 
 ```zig
 pub fn main() !void {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     const params = comptime clap.parseParamsComptime(
         \\-h, --help         Display this help and exit.
@@ -399,15 +422,13 @@ pub fn main() !void {
         \\
     );
 
-    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{
-        .allocator = gpa.allocator(),
-    });
+    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{ .allocator = gpa });
     defer res.deinit();
 
     // `clap.usageToFile` is a function that can print a simple usage string. It can print any
     // `Param` where `Id` has a `value` method (`Param(Help)` is one such parameter).
     if (res.args.help != 0)
-        return clap.usageToFile(.stdout(), clap.Help, &params);
+        return clap.usageToFile(io, .stdout(), clap.Help, &params);
 }
 
 const clap = @import("clap");

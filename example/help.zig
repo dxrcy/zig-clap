@@ -1,6 +1,10 @@
 pub fn main() !void {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa_state = std.heap.DebugAllocator(.{}){};
+    const gpa = gpa_state.allocator();
+    defer _ = gpa_state.deinit();
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
 
     const params = comptime clap.parseParamsComptime(
         \\-h, --help     Display this help and exit.
@@ -8,13 +12,9 @@ pub fn main() !void {
         \\
     );
 
-    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{
-        .allocator = gpa.allocator(),
-    });
+    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{ .allocator = gpa });
     defer res.deinit();
 
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
     // `clap.help` is a function that can print a simple help message. It can print any `Param`
     // where `Id` has a `description` and `value` method (`Param(Help)` is one such parameter).
     // The last argument contains options as to how `help` should print those parameters. Using

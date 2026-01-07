@@ -24,13 +24,13 @@ pub fn main() !void {
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
 
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io: std.Io = threaded.io();
+
     var iter = try std.process.ArgIterator.initWithAllocator(gpa);
     defer iter.deinit();
 
     _ = iter.next();
-
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
 
     var diag = clap.Diagnostic{};
     var res = clap.parseEx(clap.Help, &main_params, main_parsers, &iter, .{
@@ -55,11 +55,11 @@ pub fn main() !void {
     const command = res.positionals[0] orelse return error.MissingCommand;
     switch (command) {
         .help => std.debug.print("--help\n", .{}),
-        .math => try mathMain(gpa, &iter, res),
+        .math => try mathMain(io, gpa, &iter, res),
     }
 }
 
-fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
+fn mathMain(io: std.Io, gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
     // The parent arguments are not used here, but there are cases where it might be useful, so
     // this example shows how to pass the arguments around.
     _ = main_args;
@@ -76,8 +76,6 @@ fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: M
 
     // Here we pass the partially parsed argument iterator.
     var diag = clap.Diagnostic{};
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
     var res = clap.parseEx(clap.Help, &params, clap.parsers.default, iter, .{
         .diagnostic = &diag,
         .allocator = gpa,
