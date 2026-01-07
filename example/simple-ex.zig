@@ -30,7 +30,7 @@ pub fn main() !void {
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, parsers, .{
         .diagnostic = &diag,
-        .allocator = gpa.allocator(),
+        .allocator = gpa,
         // The assignment separator can be configured. `--number=1` and `--number:1` is now
         // allowed.
         .assignment_separators = "=:",
