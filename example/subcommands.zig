@@ -19,7 +19,7 @@ const main_params = clap.parseParamsComptime(
 // get the return type of `clap.parse` and `clap.parseEx`.
 const MainArgs = clap.ResultEx(clap.Help, &main_params, main_parsers);
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -27,7 +27,7 @@ pub fn main() !void {
     var threaded: std.Io.Threaded = .init_single_threaded;
     const io: std.Io = threaded.io();
 
-    var iter = try std.process.ArgIterator.initWithAllocator(gpa);
+    var iter = try init.minimal.args.iterateAllocator(gpa);
     defer iter.deinit();
 
     _ = iter.next();
@@ -59,7 +59,7 @@ pub fn main() !void {
     }
 }
 
-fn mathMain(io: std.Io, gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
+fn mathMain(io: std.Io, gpa: std.mem.Allocator, iter: *std.process.Args.Iterator, main_args: MainArgs) !void {
     // The parent arguments are not used here, but there are cases where it might be useful, so
     // this example shows how to pass the arguments around.
     _ = main_args;

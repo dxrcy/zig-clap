@@ -1,4 +1,4 @@
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -13,7 +13,7 @@ pub fn main() !void {
         \\
     );
 
-    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{ .allocator = gpa });
+    var res = try clap.parse(clap.Help, &params, clap.parsers.default, init.minimal.args, .{ .allocator = gpa });
     defer res.deinit();
 
     // `clap.usageToFile` is a function that can print a simple usage string. It can print any

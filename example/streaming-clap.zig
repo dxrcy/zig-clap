@@ -1,4 +1,4 @@
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -20,7 +20,7 @@ pub fn main() !void {
         .{ .id = 'f', .takes_value = .one },
     };
 
-    var iter = try std.process.ArgIterator.initWithAllocator(gpa);
+    var iter = try init.minimal.args.iterateAllocator(gpa);
     defer iter.deinit();
 
     // Skip exe argument.
@@ -30,7 +30,7 @@ pub fn main() !void {
     // This is optional. You can also leave the `diagnostic` field unset if you
     // don't care about the extra information `Diagnostic` provides.
     var diag = clap.Diagnostic{};
-    var parser = clap.streaming.Clap(u8, std.process.ArgIterator){
+    var parser = clap.streaming.Clap(u8, std.process.Args.Iterator){
         .params = &params,
         .iter = &iter,
         .diagnostic = &diag,

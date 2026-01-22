@@ -1,4 +1,4 @@
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -20,7 +20,7 @@ pub fn main() !void {
     // This is optional. You can also pass `.{}` to `clap.parse` if you don't
     // care about the extra information `Diagnostics` provides.
     var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+    var res = clap.parse(clap.Help, &params, clap.parsers.default, init.minimal.args, .{
         .diagnostic = &diag,
         .allocator = gpa,
     }) catch |err| {

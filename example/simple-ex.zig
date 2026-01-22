@@ -1,4 +1,4 @@
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -28,7 +28,7 @@ pub fn main() !void {
     };
 
     var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, parsers, .{
+    var res = clap.parse(clap.Help, &params, parsers, init.minimal.args, .{
         .diagnostic = &diag,
         .allocator = gpa,
         // The assignment separator can be configured. `--number=1` and `--number:1` is now
