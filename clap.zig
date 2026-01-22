@@ -648,16 +648,17 @@ pub fn parse(
     comptime Id: type,
     comptime params: []const Param(Id),
     comptime value_parsers: anytype,
+    arguments: std.process.Args,
     opt: ParseOptions,
 ) !Result(Id, params, value_parsers) {
     var arena = std.heap.ArenaAllocator.init(opt.allocator);
     errdefer arena.deinit();
 
-    var iter = try std.process.ArgIterator.initWithAllocator(arena.allocator());
+    var iter = try arguments.iterateAllocator(arena.allocator());
     const exe_arg = iter.next();
 
     const result = try parseEx(Id, params, value_parsers, &iter, .{
-        // Let's reuse the arena from the `ArgIterator` since we already have it.
+        // Let's reuse the arena from the `Args.Iterator` since we already have it.
         .allocator = arena.allocator(),
         .diagnostic = opt.diagnostic,
         .assignment_separators = opt.assignment_separators,
