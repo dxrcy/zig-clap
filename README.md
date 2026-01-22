@@ -54,7 +54,7 @@ incomplete.
 The simplest way to use this library is to just call the `clap.parse` function.
 
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -76,7 +76,7 @@ pub fn main() !void {
     // This is optional. You can also pass `.{}` to `clap.parse` if you don't
     // care about the extra information `Diagnostics` provides.
     var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+    var res = clap.parse(clap.Help, &params, clap.parsers.default, init.minimal.args, .{
         .diagnostic = &diag,
         .allocator = gpa,
     }) catch |err| {
@@ -112,7 +112,7 @@ contains a parser that returns `usize`. You can pass in something other than `cl
 if you want some other mapping.
 
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -142,7 +142,7 @@ pub fn main() !void {
     };
 
     var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, parsers, .{
+    var res = clap.parse(clap.Help, &params, parsers, init.minimal.args, .{
         .diagnostic = &diag,
         .allocator = gpa,
         // The assignment separator can be configured. `--number=1` and `--number:1` is now
@@ -198,7 +198,7 @@ const main_params = clap.parseParamsComptime(
 // get the return type of `clap.parse` and `clap.parseEx`.
 const MainArgs = clap.ResultEx(clap.Help, &main_params, main_parsers);
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -206,7 +206,7 @@ pub fn main() !void {
     var threaded: std.Io.Threaded = .init_single_threaded;
     const io: std.Io = threaded.io();
 
-    var iter = try std.process.ArgIterator.initWithAllocator(gpa);
+    var iter = try init.minimal.args.iterateAllocator(gpa);
     defer iter.deinit();
 
     _ = iter.next();
@@ -238,7 +238,7 @@ pub fn main() !void {
     }
 }
 
-fn mathMain(io: std.Io, gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
+fn mathMain(io: std.Io, gpa: std.mem.Allocator, iter: *std.process.Args.Iterator, main_args: MainArgs) !void {
     // The parent arguments are not used here, but there are cases where it might be useful, so
     // this example shows how to pass the arguments around.
     _ = main_args;
@@ -284,7 +284,7 @@ The `streaming.Clap` is the base of all the other parsers. It's a streaming pars
 `args.Iterator` to provide it with arguments lazily.
 
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -306,7 +306,7 @@ pub fn main() !void {
         .{ .id = 'f', .takes_value = .one },
     };
 
-    var iter = try std.process.ArgIterator.initWithAllocator(gpa);
+    var iter = try init.minimal.args.iterateAllocator(gpa);
     defer iter.deinit();
 
     // Skip exe argument.
@@ -316,7 +316,7 @@ pub fn main() !void {
     // This is optional. You can also leave the `diagnostic` field unset if you
     // don't care about the extra information `Diagnostic` provides.
     var diag = clap.Diagnostic{};
-    var parser = clap.streaming.Clap(u8, std.process.ArgIterator){
+    var parser = clap.streaming.Clap(u8, std.process.Args.Iterator){
         .params = &params,
         .iter = &iter,
         .diagnostic = &diag,
@@ -363,7 +363,7 @@ runtime.
 is passed to `help` to control how the help message is printed.
 
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -377,7 +377,7 @@ pub fn main() !void {
         \\
     );
 
-    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{ .allocator = gpa });
+    var res = try clap.parse(clap.Help, &params, clap.parsers.default, init.minimal.args, .{ .allocator = gpa });
     defer res.deinit();
 
     // `clap.help` is a function that can print a simple help message. It can print any `Param`
@@ -407,7 +407,7 @@ $ zig-out/bin/help --help
 `value` method so it can provide that in the output.
 
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
@@ -422,7 +422,7 @@ pub fn main() !void {
         \\
     );
 
-    var res = try clap.parse(clap.Help, &params, clap.parsers.default, .{ .allocator = gpa });
+    var res = try clap.parse(clap.Help, &params, clap.parsers.default, init.minimal.args, .{ .allocator = gpa });
     defer res.deinit();
 
     // `clap.usageToFile` is a function that can print a simple usage string. It can print any
