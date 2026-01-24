@@ -20,14 +20,7 @@ const main_params = clap.parseParamsComptime(
 const MainArgs = clap.ResultEx(clap.Help, &main_params, main_parsers);
 
 pub fn main(init: std.process.Init) !void {
-    var gpa_state = std.heap.DebugAllocator(.{}){};
-    const gpa = gpa_state.allocator();
-    defer _ = gpa_state.deinit();
-
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
-
-    var iter = try init.minimal.args.iterateAllocator(gpa);
+    var iter = try init.minimal.args.iterateAllocator(init.gpa);
     defer iter.deinit();
 
     _ = iter.next();
@@ -35,7 +28,7 @@ pub fn main(init: std.process.Init) !void {
     var diag = clap.Diagnostic{};
     var res = clap.parseEx(clap.Help, &main_params, main_parsers, &iter, .{
         .diagnostic = &diag,
-        .allocator = gpa,
+        .allocator = init.gpa,
 
         // Terminate the parsing of arguments after parsing the first positional (0 is passed
         // here because parsed positionals are, like slices and arrays, indexed starting at 0).
@@ -44,7 +37,7 @@ pub fn main(init: std.process.Init) !void {
         // not fully consumed. It can then be reused to parse the arguments for subcommands.
         .terminating_positional = 0,
     }) catch |err| {
-        try diag.reportToFile(io, .stderr(), err);
+        try diag.reportToFile(init.io, .stderr(), err);
         return err;
     };
     defer res.deinit();
@@ -55,7 +48,7 @@ pub fn main(init: std.process.Init) !void {
     const command = res.positionals[0] orelse return error.MissingCommand;
     switch (command) {
         .help => std.debug.print("--help\n", .{}),
-        .math => try mathMain(io, gpa, &iter, res),
+        .math => try mathMain(init.io, init.gpa, &iter, res),
     }
 }
 

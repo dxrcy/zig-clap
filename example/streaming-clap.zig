@@ -1,11 +1,4 @@
 pub fn main(init: std.process.Init) !void {
-    var gpa_state = std.heap.DebugAllocator(.{}){};
-    const gpa = gpa_state.allocator();
-    defer _ = gpa_state.deinit();
-
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
-
     // First we specify what parameters our program can take.
     const params = [_]clap.Param(u8){
         .{
@@ -20,7 +13,7 @@ pub fn main(init: std.process.Init) !void {
         .{ .id = 'f', .takes_value = .one },
     };
 
-    var iter = try init.minimal.args.iterateAllocator(gpa);
+    var iter = try init.minimal.args.iterateAllocator(init.gpa);
     defer iter.deinit();
 
     // Skip exe argument.
@@ -39,7 +32,7 @@ pub fn main(init: std.process.Init) !void {
     // Because we use a streaming parser, we have to consume each argument parsed individually.
     while (parser.next() catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(io, .stderr(), err);
+        try diag.reportToFile(init.io, .stderr(), err);
         return err;
     }) |arg| {
         // arg.param will point to the parameter which matched the argument.
